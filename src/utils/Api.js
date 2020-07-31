@@ -13,6 +13,9 @@ export class Api {
     static POST(url, data) {
         return Axios.post(url, data)
             .then(res => Promise.resolve(res.data))
-            .catch(err => Promise.reject(err));
+            .catch(err => {
+                console.error(err);
+                return Promise.reject(err)
+            });
     }
 }

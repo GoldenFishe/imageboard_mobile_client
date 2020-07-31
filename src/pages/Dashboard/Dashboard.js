@@ -1,24 +1,44 @@
-import React, {useEffect, useState} from 'react';
-import {SafeAreaView, View, Button, Text, ScrollView} from 'react-native';
+import React, {useEffect, useState, memo} from 'react';
+import {View, Button, Text, ScrollView, StyleSheet, TextInput} from 'react-native';
 
 import {Api} from "../../utils/Api";
 
 const Dashboard = ({navigation}) => {
     const [topics, setTopics] = useState({});
+    const [filteredTopics, setFilteredTopics] = useState({});
+    const [topicFilter, setTopicFilter] = useState('');
     useEffect(() => {
         Api.GET('https://2ch.hk/makaba/mobile.fcgi?task=get_boards')
-            .then(topics => setTopics(topics))
+            .then(topics => {
+                console.log(topics);
+                setTopics(topics);
+                setFilteredTopics(topics);
+            })
     }, [])
-    console.log(topics);
+    const filterTopics = filter => {
+        const clone = {...topics};
+        for (let category in clone) {
+            const filteredCategory = clone[category].filter(topic => new RegExp(filter, 'igm').test(topic.name));
+            !filteredCategory.length ? delete clone[category] : clone[category] = filteredCategory;
+        }
+        setFilteredTopics(clone);
+        setTopicFilter(filter);
+    }
     return (
-        <ScrollView>
-            {Object.keys(topics).map(category => {
+        <ScrollView style={styles.container}>
+            <TextInput value={topicFilter}
+                       placeholder="Поиск по категории"
+                       style={styles.filterInput}
+                       onChangeText={filterTopics}/>
+            {Object.keys(filteredTopics).map(category => {
                 return (
-                    <View key={category}>
-                        <Text>{category}</Text>
+                    <View key={category}
+                          style={styles.category}>
+                        <Text style={styles.categoryTitle}>{category}</Text>
                         <View>
-                            {topics[category].map(topic => {
+                            {filteredTopics[category].map(topic => {
                                 return <Button key={topic.name}
+                                               style={styles.topicLink}
                                                title={topic.name}
                                                onPress={() => navigation.navigate('Topic', {id: topic.id})}/>
                             })}
@@ -30,4 +50,26 @@ const Dashboard = ({navigation}) => {
     );
 };
 
-export default Dashboard;
+export default memo(Dashboard);
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        padding: 20,
+        backgroundColor: "#fff"
+    },
+    filterInput: {
+        borderWidth: 1,
+        borderColor: '#eaeaea',
+        padding: 10,
+        borderRadius: 10
+    },
+    category: {
+        marginTop: 40
+    },
+    categoryTitle: {
+        fontSize: 20,
+        textAlign: 'center',
+        marginBottom: 20
+    }
+});
